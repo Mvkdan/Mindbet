@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+}
+
+@layer components {
+  .match-card {
+    @apply bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .match-card-header {
+    @apply px-4 py-3 border-b border-gray-100 flex items-center justify-between;
+  }
+
+  .match-card-content {
+    @apply p-4 space-y-4;
+  }
+
+  .team-row {
+    @apply flex items-center justify-between;
+  }
+
+  .team-info {
+    @apply flex items-center space-x-3;
+  }
+
+  .team-logo {
+    @apply w-8 h-8 object-contain;
+  }
+
+  .team-name {
+    @apply font-medium;
+  }
+
+  .score {
+    @apply text-2xl font-bold;
+  }
+
+  .match-status {
+    @apply px-2 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .match-status-live {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .match-status-finished {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+  .match-status-scheduled {
+    @apply bg-green-100 text-green-800;
+  }
+}
