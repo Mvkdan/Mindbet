@@ -1,18 +1,17 @@
 import React from 'react';
 import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { MapPin, Clock, Info } from 'lucide-react';
+import { MapPin, Info, Sparkles } from 'lucide-react';
 import type { Match } from '../types';
 
 interface MatchCardProps {
   match: Match;
   onViewDetails: (match: Match) => void;
+  onPredictClick: (match: Match) => void;
 }
 
-export function MatchCard({ match, onViewDetails }: MatchCardProps) {
+export function MatchCard({ match, onViewDetails, onPredictClick }: MatchCardProps) {
   const isLive = match.fixture.status.short === 'LIVE';
   const isFinished = match.fixture.status.short === 'FT';
-  const isPending = !isLive && !isFinished;
 
   return (
     <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-200">
@@ -78,13 +77,22 @@ export function MatchCard({ match, onViewDetails }: MatchCardProps) {
               <MapPin className="w-4 h-4" />
               <span>{match.fixture.venue.name}</span>
             </div>
-            <button
-              onClick={() => onViewDetails(match)}
-              className="flex items-center space-x-1 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              <Info className="w-4 h-4" />
-              <span>Détails</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => onPredictClick(match)}
+                className="flex items-center space-x-1 px-3 py-1 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Prédire</span>
+              </button>
+              <button
+                onClick={() => onViewDetails(match)}
+                className="flex items-center space-x-1 px-3 py-1 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <Info className="w-4 h-4" />
+                <span>Détails</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
