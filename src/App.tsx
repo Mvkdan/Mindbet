@@ -13,7 +13,8 @@ import {
   Activity,
   Menu,
   X,
-  History
+  History,
+  Database
 } from 'lucide-react';
 import { supabase } from './lib/supabase';
 import { Dashboard } from './components/Dashboard';
@@ -24,6 +25,7 @@ import { Statistics } from './pages/Statistics';
 import { MatchHistory } from './pages/MatchHistory';
 import { Odds } from './components/Odds';
 import { Settings } from './components/Settings';
+import { StorageManagement } from './pages/StorageManagement';
 import { Login } from './components/Login';
 import { ChatBot } from './components/ChatBot/ChatBot';
 
@@ -77,6 +79,7 @@ export default function App() {
     { icon: TrendingUp, label: 'Statistiques', path: '/stats' },
     { icon: DollarSign, label: 'Cotes', path: '/odds' },
     { icon: SettingsIcon, label: 'Paramètres', path: '/settings' },
+    { icon: Database, label: 'Stockage', path: '/storage' },
   ];
 
   return (
@@ -149,6 +152,7 @@ export default function App() {
                   <Route path="/stats" element={<Statistics />} />
                   <Route path="/odds" element={<Odds />} />
                   <Route path="/settings" element={<Settings />} />
+                  <Route path="/storage" element={<StorageManagement />} />
                   <Route path="/login" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
