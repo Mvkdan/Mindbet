@@ -1,34 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { analyzePrediction } from '../lib/gemini';
+import { getTeamStatistics } from '../api';
+import { calculatePrediction } from '../lib/prediction';
+import { getHeadToHeadHistory } from '../storage/services/historical';
 import { Loader2, TrendingUp, Percent, Trophy, Scale } from 'lucide-react';
 import type { Match } from '../types';
+import type { PredictionResult } from '../lib/prediction';
 
 interface MatchPredictionProps {
   match: Match;
-}
-
-interface PredictionResult {
-  winProbability: {
-    home: number;
-    away: number;
-    draw: number;
-  };
-  predictedScore: {
-    home: number;
-    away: number;
-  };
-  keyFactors: string[];
-  formAnalysis: {
-    home: string;
-    away: string;
-  };
-  headToHead: {
-    total: number;
-    homeWins: number;
-    awayWins: number;
-    draws: number;
-  };
 }
 
 export const MatchPrediction: React.FC<MatchPredictionProps> = ({ match }) => {
@@ -38,8 +17,8 @@ export const MatchPrediction: React.FC<MatchPredictionProps> = ({ match }) => {
 
   useEffect(() => {
     async function fetchPrediction() {
-      if (!match?.teams?.home?.name || !match?.teams?.away?.name) {
-        setError('Match data is incomplete');
+      if (!match?.teams?.home?.id || !match?.teams?.away?.id || !match?.league?.id || !match?.league?.season) {
+        setError('Match data is incomplete for prediction.');
         setLoading(false);
         return;
       }
@@ -48,28 +27,21 @@ export const MatchPrediction: React.FC<MatchPredictionProps> = ({ match }) => {
         setLoading(true);
         setError(null);
 
-        // Fetch historical data from Supabase
-        const { data: historicalMatches, error: historyError } = await supabase
-          .from('matches')
-          .select(`
-            *,
-            home_team:teams!matches_home_team_id_fkey(*),
-            away_team:teams!matches_away_team_id_fkey(*)
-          `)
-          .or(`home_team_id.eq.${match.teams.home.id},away_team_id.eq.${match.teams.home.id}`)
-          .or(`home_team_id.eq.${match.teams.away.id},away_team_id.eq.${match.teams.away.id}`)
-          .order('match_date', { ascending: false })
-          .limit(20);
+        const homeStatsPromise = getTeamStatistics(match.teams.home.id, match.league.id, match.league.season);
+        const awayStatsPromise = getTeamStatistics(match.teams.away.id, match.league.id, match.league.season);
+        const h2hPromise = getHeadToHeadHistory(match.teams.home.name, match.teams.away.name);
 
-        if (historyError) throw historyError;
+        const [homeStats, awayStats, h2hMatches] = await Promise.all([
+          homeStatsPromise,
+          awayStatsPromise,
+          h2hPromise,
+        ]);
 
-        // Get prediction from Gemini
-        const result = await analyzePrediction(
-          match.teams.home.name,
-          match.teams.away.name,
-          historicalMatches
-        );
+        if (!homeStats || !awayStats) {
+          throw new Error('Could not fetch team statistics.');
+        }
 
+        const result = calculatePrediction(homeStats, awayStats, h2hMatches);
         setPrediction(result);
       } catch (err) {
         console.error('Error fetching prediction:', err);
@@ -162,42 +134,6 @@ export const MatchPrediction: React.FC<MatchPredictionProps> = ({ match }) => {
                 <li key={index} className="text-gray-700">{factor}</li>
               ))}
             </ul>
-          </div>
-
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h3 className="text-lg font-semibold mb-3">Form Analysis</h3>
-            <div className="space-y-3">
-              <div>
-                <h4 className="font-medium">{match.teams.home.name}</h4>
-                <p className="text-gray-700">{prediction.formAnalysis.home}</p>
-              </div>
-              <div>
-                <h4 className="font-medium">{match.teams.away.name}</h4>
-                <p className="text-gray-700">{prediction.formAnalysis.away}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 bg-gray-50 p-4 rounded-lg">
-        <h3 className="text-lg font-semibold mb-3">Head-to-Head Record</h3>
-        <div className="grid grid-cols-4 gap-4 text-center">
-          <div>
-            <div className="text-2xl font-bold text-blue-600">{prediction.headToHead.total}</div>
-            <div className="text-sm text-gray-600">Total Matches</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-green-600">{prediction.headToHead.homeWins}</div>
-            <div className="text-sm text-gray-600">{match.teams.home.name} Wins</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-red-600">{prediction.headToHead.awayWins}</div>
-            <div className="text-sm text-gray-600">{match.teams.away.name} Wins</div>
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-gray-600">{prediction.headToHead.draws}</div>
-            <div className="text-sm text-gray-600">Draws</div>
           </div>
         </div>
       </div>
