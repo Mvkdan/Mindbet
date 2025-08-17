@@ -79,3 +79,24 @@ export async function getHeadToHeadHistory(
 
   return data || [];
 }
+
+/**
+ * Retrieves a paginated list of historical matches.
+ * @param page - The page number to retrieve.
+ * @param pageSize - The number of matches per page.
+ * @returns A promise that resolves to an array of historical matches.
+ */
+export async function getHistoricalMatches(page: number = 1, pageSize: number = 20) {
+  const { data, error, count } = await supabase
+    .from('historical_matches')
+    .select('*', { count: 'exact' })
+    .order('match_date', { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+
+  if (error) {
+    console.error('Error fetching historical matches:', error);
+    throw new Error('Failed to fetch historical matches.');
+  }
+
+  return { matches: data || [], count: count || 0 };
+}
