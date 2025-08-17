@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select } from '../ui/select';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
 import { fetchHistoricalLeagueData } from '../../services/historicalDataImporter';
 import { insertHistoricalLeague, insertHistoricalMatches } from '../../storage/services/historical';
@@ -67,28 +67,30 @@ export const HistoricalDataImporter: React.FC = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label htmlFor="season-select" className="text-sm font-medium">Season</label>
-            <Select onValueChange={setSeason} value={season}>
-              <SelectTrigger id="season-select">
-                <SelectValue placeholder="Select a season" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSeasons.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
+            <Select
+              id="season-select"
+              value={season}
+              onChange={(e) => setSeason(e.target.value)}
+              required
+            >
+              <option value="" disabled>Select a season</option>
+              {availableSeasons.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </Select>
           </div>
           <div>
             <label htmlFor="league-select" className="text-sm font-medium">League</label>
-            <Select onValueChange={setLeagueFile} value={leagueFile}>
-              <SelectTrigger id="league-select">
-                <SelectValue placeholder="Select a league" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableLeagues.map(l => (
-                  <SelectItem key={l.file} value={l.file}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
+            <Select
+              id="league-select"
+              value={leagueFile}
+              onChange={(e) => setLeagueFile(e.target.value)}
+              required
+            >
+              <option value="" disabled>Select a league</option>
+              {availableLeagues.map(l => (
+                <option key={l.file} value={l.file}>{l.name}</option>
+              ))}
             </Select>
           </div>
         </div>
