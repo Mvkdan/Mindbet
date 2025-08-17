@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 import { StorageNavigator } from '../components/storage/StorageNavigator';
 import { DataPreview } from '../components/storage/DataPreview';
 import { ImportDialog } from '../components/storage/ImportDialog';
+import { HistoricalDataImporter } from '../components/storage/HistoricalDataImporter';
+import { DataValidation } from '../components/storage/DataValidation';
 import { LoadingState } from '../components/LoadingState';
 import { Card, CardContent } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -251,7 +253,12 @@ export const StorageManagement: React.FC = () => {
       </div>
 
       {/* Contenu principal */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <HistoricalDataImporter />
+          <DataValidation />
+        </div>
+
         {loading ? (
           <LoadingState message="Chargement des données..." />
         ) : error ? (

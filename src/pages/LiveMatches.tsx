@@ -1,21 +1,22 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Activity, RefreshCw, Search, Filter } from 'lucide-react';
 import { useLiveMatches } from '../hooks/useLiveMatches';
 import { useMatchAutoSave } from '../hooks/useMatchAutoSave';
-import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Select } from '../components/ui/select';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
+import { MatchCard } from '../components/MatchCard';
+import { PredictionModal } from '../components/PredictionModal';
 import type { Match } from '../types';
 
 export function LiveMatches() {
   const { data: matches = [], isLoading, error, refresh } = useLiveMatches();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLeague, setSelectedLeague] = useState<string>('');
+  const [selectedMatchForPrediction, setSelectedMatchForPrediction] = useState<Match | null>(null);
 
   // Activer la sauvegarde automatique des matchs terminés
   useMatchAutoSave(matches);
@@ -131,62 +132,12 @@ export function LiveMatches() {
       ) : filteredMatches.length > 0 ? (
         <div className="space-y-4">
           {filteredMatches.map((match) => (
-            <Card key={match.fixture.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-base font-medium flex items-center space-x-2">
-                  <img
-                    src={match.league.logo}
-                    alt={match.league.name}
-                    className="w-6 h-6 object-contain"
-                  />
-                  <span>{match.league.name}</span>
-                </CardTitle>
-                <Badge variant="secondary">
-                  {match.fixture.status.elapsed}'
-                </Badge>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Home Team */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={match.teams.home.logo}
-                        alt={match.teams.home.name}
-                        className="w-8 h-8 object-contain"
-                      />
-                      <span className="font-medium">{match.teams.home.name}</span>
-                    </div>
-                    <span className="text-2xl font-bold">{match.goals.home}</span>
-                  </div>
-
-                  {/* Away Team */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <img
-                        src={match.teams.away.logo}
-                        alt={match.teams.away.name}
-                        className="w-8 h-8 object-contain"
-                      />
-                      <span className="font-medium">{match.teams.away.name}</span>
-                    </div>
-                    <span className="text-2xl font-bold">{match.goals.away}</span>
-                  </div>
-
-                  {/* Match Info */}
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>{match.fixture.venue.name}</span>
-                      <span>
-                        {format(new Date(match.fixture.date), 'HH:mm', {
-                          locale: fr
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <MatchCard
+              key={match.fixture.id}
+              match={match}
+              onViewDetails={(m) => console.log('View details for', m.fixture.id)}
+              onPredictClick={(m) => setSelectedMatchForPrediction(m)}
+            />
           ))}
         </div>
       ) : (
@@ -201,6 +152,13 @@ export function LiveMatches() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {selectedMatchForPrediction && (
+        <PredictionModal
+          match={selectedMatchForPrediction}
+          onClose={() => setSelectedMatchForPrediction(null)}
+        />
       )}
     </div>
   );

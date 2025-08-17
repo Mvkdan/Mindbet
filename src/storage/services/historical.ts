@@ -18,6 +18,9 @@ export async function insertHistoricalLeague(leagueData: {
     .single();
 
   if (error) {
+    if (error.code === '23505') {
+      throw new Error('This league/season has already been imported.');
+    }
     console.error('Error inserting historical league:', error);
     throw new Error('Failed to insert historical league.');
   }
@@ -78,4 +81,60 @@ export async function getHeadToHeadHistory(
   }
 
   return data || [];
+}
+
+/**
+ * Retrieves a paginated list of historical matches.
+ * @param page - The page number to retrieve.
+ * @param pageSize - The number of matches per page.
+ * @returns A promise that resolves to an array of historical matches.
+ */
+export async function getHistoricalMatches(page: number = 1, pageSize: number = 20) {
+  const { data, error, count } = await supabase
+    .from('historical_matches')
+    .select('*', { count: 'exact' })
+    .eq('status', 'validated')
+    .order('match_date', { ascending: false })
+    .range((page - 1) * pageSize, page * pageSize - 1);
+
+  if (error) {
+    console.error('Error fetching historical matches:', error);
+    throw new Error('Failed to fetch historical matches.');
+  }
+
+  return { matches: data || [], count: count || 0 };
+}
+
+/**
+ * Retrieves all historical leagues that are in the 'staging' state.
+ * @returns A promise that resolves to an array of staging leagues.
+ */
+export async function getStagedLeagues() {
+  const { data, error } = await supabase
+    .from('historical_leagues')
+    .select('*')
+    .eq('status', 'staging')
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching staged leagues:', error);
+    throw new Error('Failed to fetch staged leagues.');
+  }
+
+  return data || [];
+}
+
+/**
+ * Validates a historical league and all its matches by calling a database RPC.
+ * @param leagueId - The ID of the league to validate.
+ */
+export async function validateLeague(leagueId: number) {
+  const { error } = await supabase.rpc('validate_historical_league', {
+    league_id_to_validate: leagueId,
+  });
+
+  if (error) {
+    console.error('Error validating league:', error);
+    throw new Error('Failed to validate league.');
+  }
 }

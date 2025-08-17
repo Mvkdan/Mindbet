@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Select } from '../ui/select';
+import { Input } from '../ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '../ui/card';
 import { fetchHistoricalLeagueData } from '../../services/historicalDataImporter';
 import { insertHistoricalLeague, insertHistoricalMatches } from '../../storage/services/historical';
@@ -19,30 +20,53 @@ const availableLeagues = [
 ];
 
 export const HistoricalDataImporter: React.FC = () => {
+  // State for URL import
   const [season, setSeason] = useState<string>('');
   const [leagueFile, setLeagueFile] = useState<string>('');
+
+  // State for local file import
+  const [localFile, setLocalFile] = useState<File | null>(null);
+  const [localSeason, setLocalSeason] = useState('');
+  const [localSourceFile, setLocalSourceFile] = useState('');
+
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
-  const handleImport = async () => {
-    if (!season || !leagueFile) {
-      setStatus('error');
-      setMessage('Please select a season and a league.');
-      return;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setLocalFile(e.target.files[0]);
     }
+  };
 
+  const handleImport = async () => {
     setStatus('loading');
-    setMessage('Fetching data from source...');
+    setMessage('Importing...');
 
     try {
-      const leagueData = await fetchHistoricalLeagueData(season, leagueFile);
+      let leagueData;
+      let seasonToUse = season;
+      let sourceFileToUse = leagueFile;
+
+      if (localFile) {
+        // Local file import logic
+        setMessage('Reading local file...');
+        seasonToUse = localSeason;
+        sourceFileToUse = localSourceFile;
+
+        const fileContent = await localFile.text();
+        leagueData = JSON.parse(fileContent);
+      } else {
+        // URL import logic
+        setMessage('Fetching data from source...');
+        leagueData = await fetchHistoricalLeagueData(season, leagueFile);
+      }
 
       setMessage('Saving data to database...');
 
       const newLeague = await insertHistoricalLeague({
         name: leagueData.name,
-        season: season,
-        source_file: leagueFile,
+        season: seasonToUse,
+        source_file: sourceFileToUse,
       });
 
       await insertHistoricalMatches(leagueData.matches, newLeague.id);
@@ -52,6 +76,10 @@ export const HistoricalDataImporter: React.FC = () => {
     } catch (err) {
       setStatus('error');
       setMessage(err.message || 'An unknown error occurred during import.');
+    } finally {
+      // Reset file input for re-upload of same file
+      const fileInput = document.getElementById('local-file-input') as HTMLInputElement;
+      if(fileInput) fileInput.value = '';
     }
   };
 
@@ -64,32 +92,43 @@ export const HistoricalDataImporter: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="season-select" className="text-sm font-medium">Season</label>
-            <Select onValueChange={setSeason} value={season}>
-              <SelectTrigger id="season-select">
-                <SelectValue placeholder="Select a season" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableSeasons.map(s => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div>
+          <p className="text-sm font-medium mb-2">Import from URL</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="season-select" className="block text-xs text-gray-600 mb-1">Season</label>
+              <Select id="season-select" value={season} onChange={(e) => setSeason(e.target.value)} disabled={!!localFile}>
+                <option value="" disabled>Select a season</option>
+                {availableSeasons.map(s => <option key={s} value={s}>{s}</option>)}
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="league-select" className="block text-xs text-gray-600 mb-1">League</label>
+              <Select id="league-select" value={leagueFile} onChange={(e) => setLeagueFile(e.target.value)} disabled={!!localFile}>
+                <option value="" disabled>Select a league</option>
+                {availableLeagues.map(l => <option key={l.file} value={l.file}>{l.name}</option>)}
+              </Select>
+            </div>
           </div>
-          <div>
-            <label htmlFor="league-select" className="text-sm font-medium">League</label>
-            <Select onValueChange={setLeagueFile} value={leagueFile}>
-              <SelectTrigger id="league-select">
-                <SelectValue placeholder="Select a league" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableLeagues.map(l => (
-                  <SelectItem key={l.file} value={l.file}>{l.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        </div>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-gray-500">Or</span>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-sm font-medium mb-2">Import from Local File</p>
+          <div className="space-y-2">
+            <Input id="local-file-input" type="file" accept=".json" onChange={handleFileChange} disabled={!!(season || leagueFile)} />
+            <div className="grid grid-cols-2 gap-4">
+              <Input placeholder="Season (e.g., 2023-24)" value={localSeason} onChange={(e) => setLocalSeason(e.target.value)} disabled={!localFile} />
+              <Input placeholder="Source File (e.g., en.1.json)" value={localSourceFile} onChange={(e) => setLocalSourceFile(e.target.value)} disabled={!localFile} />
+            </div>
           </div>
         </div>
       </CardContent>
@@ -100,7 +139,12 @@ export const HistoricalDataImporter: React.FC = () => {
           {status === 'error' && <AlertTriangle className="w-5 h-5 text-red-500" />}
           <span className="text-sm text-gray-600">{message}</span>
         </div>
-        <Button onClick={handleImport} disabled={!season || !leagueFile || status === 'loading'}>
+        <Button
+          onClick={handleImport}
+          disabled={
+            (!season || !leagueFile) && (!localFile || !localSeason || !localSourceFile) || status === 'loading'
+          }
+        >
           Import Data
         </Button>
       </CardFooter>
